@@ -1,0 +1,218 @@
+
+#include "SteppingAction.hh"
+
+#include "globals.hh"
+#include "G4SystemOfUnits.hh"
+#include "G4UnitsTable.hh"
+
+#include "G4Step.hh"
+#include "G4Track.hh"
+#include "G4TrackStatus.hh"
+
+#include "G4RunManager.hh"
+#include "g4root.hh"
+
+#include "RunAction.hh"
+#include "PenOutputPrinter.hh"
+
+const std::string txtred("\033[0;31m");
+const std::string txtgreen("\033[0;32m");
+const std::string txtyellow("\033[0;33m");
+const std::string txtblue("\033[0;34m");
+const std::string txtreset("\033[0m");
+
+
+SteppingAction::SteppingAction()
+{
+  G4cout << "void SteppingAction constructor is not meant to be used!."
+	 << G4endl;
+}
+
+
+SteppingAction::SteppingAction(RunAction* runAct):  fRunAct(runAct)
+{
+  fOutputPrinter = runAct->GetOutputPrinter();
+  //birthE = 0.;
+}
+
+
+SteppingAction::~SteppingAction()
+{
+  // fOutputPrinter is deleted within RunAction!
+}
+
+
+//-----------------------------------------------------------------------------
+void SteppingAction::UserSteppingAction(const G4Step* aStep)
+{
+  //  G4Track* aTrack = aStep->GetTrack();
+  
+  // Dump step info into output files and temporal variables
+  // TO DECIDE MT-APPROACH
+  // fOutputPrinter->PrintStepInfo(aStep);
+ 
+  fOutputPrinter->StoreStepInfo(aStep);
+ 
+  // Dani
+  const G4StepPoint* prePoint = aStep->GetPreStepPoint();   
+  const G4StepPoint* endPoint = aStep->GetPostStepPoint();
+
+  const G4String CriticalVolume = "pTestMassShell"; 
+
+  G4Track* theTrack = aStep->GetTrack();
+  G4int track_id = theTrack->GetTrackID();
+  const G4ParticleDefinition* particle = theTrack->GetDefinition();
+  G4double trackLength  = theTrack->GetTrackLength();
+  G4double kinE  = theTrack->GetKineticEnergy();
+
+  const G4String currentPhysicalName = prePoint->GetPhysicalVolume()->GetName();
+  const G4String particleName= particle->GetParticleName();
+  //const G4String ProcessName = endPoint->GetProcessDefinedStep()->GetProcessName();
+  
+  //std::cout<<txtyellow<<"I am a "<<particleName<<" that now is in "<<currentPhysicalName<<" towards "<<endPoint->GetPhysicalVolume()->GetName()<<txtreset<<std::endl;
+
+  if (endPoint->GetPhysicalVolume()->GetName() == "World") theTrack->SetTrackStatus(fStopAndKill); //remove particles that go back to the world
+  
+  // for debugging
+  /*
+  if (particleName=="pe-" || particleName=="e-" ){
+	  std::cout<<txtyellow<<"Track "<<track_id<<"; Step: "<<theTrack->GetCurrentStepNumber()<<": I am a "<<particleName<<" that now is in "<<currentPhysicalName<<" towards "<<endPoint->GetPhysicalVolume()->GetName();
+	  std::cout<<". Track length = "<<trackLength/um<<" um"<<"; kinE ="<<kinE/eV<<" eV."<<txtreset<<std::endl;
+	  if (theTrack->GetTrackStatus()!= fAlive) std::cout<<txtyellow<<particleName<<": Track "<<track_id<<" died after running for "<<trackLength/um<<" um"<<txtreset<<std::endl;
+  }
+  */	
+	
+	
+  // store energy of created secondary electrons/positrons
+  if (particle->GetPDGCharge()!=0 && theTrack->GetCurrentStepNumber() == 1 ){
+	  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+	  
+	  if (particleName=="pe-" || particleName=="e-"){
+		  analysisManager->FillH1(1,log10f(kinE/eV));
+		  if (kinE/keV >= 1) analysisManager->FillH2(2,theTrack->GetPosition().x()/mm,theTrack->GetPosition().z()/mm);
+		  else analysisManager->FillH2(3,theTrack->GetPosition().x()/mm,theTrack->GetPosition().z()/mm);
+	  }
+	  
+	  if (particleName=="pe+" || particleName=="e+") analysisManager->FillH1(2,log10f(kinE/eV));
+	  
+	  fRunAct->SetBirthE(kinE);
+	  fRunAct->SetBirthDist(theTrack->GetPosition().mag());
+	  fRunAct->SetBirthPos(theTrack->GetPosition());
+  }
+  
+  if (endPoint->GetPhysicalVolume()->GetName() != "World"){
+	  // particle entering the TM
+	  if (currentPhysicalName == "pVacGap1" && endPoint->GetPhysicalVolume()->GetName() == CriticalVolume){
+		  
+		  if (particle->GetPDGCharge() != 0){
+			  fRunAct->UpdateChargeCounter(particle->GetPDGCharge());
+			  if (particleName=="pe-" || particleName=="e-" || particleName=="pe+" || particleName=="e+"){
+				  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+				  analysisManager->FillH2(1,log10f(fRunAct->GetBirthE()/eV),log10f(trackLength/m));
+				  analysisManager->FillH2(5,fRunAct->GetBirthPos().x()/mm,fRunAct->GetBirthPos().z()/mm);
+				  
+				  if (particleName=="pe-" || particleName=="e-") analysisManager->FillH1(4,log10f(kinE/eV));
+			  }
+		  }
+		  
+		  /*//for debugging
+		  if (particleName=="pe-" || particleName=="e-") {
+			  std::cout<<txtblue<<"e- entering the TM\n"<<txtreset;
+			  std::cout<<"Particle charge = "<<particle->GetPDGCharge()<<std::endl;
+			  std::cout<<"Track id = "<<track_id<<std::endl;
+			  std::cout<<"Track length = "<<trackLength/um<<" um"<<std::endl;
+			  std::cout<<"Kinetic Energy = "<<kinE/eV<<" eV"<<std::endl;
+		  }
+		  if (particleName=="pe+" || particleName=="e+"){
+			  std::cout<<txtyellow<<"e+ entering the TM\n"<<txtreset;
+			  std::cout<<"Particle charge = "<<particle->GetPDGCharge()<<std::endl;
+			  std::cout<<"Track id = "<<track_id<<std::endl;
+			  std::cout<<"Track length = "<<trackLength/um<<" um"<<std::endl;
+			  std::cout<<"Kinetic Energy = "<<kinE/eV<<" eV"<<std::endl;
+		  }
+		  if (particleName=="proton") {
+			  std::cout<<txtred<<"proton entering the TM\n"<<txtreset;
+			  std::cout<<"Particle charge = "<<particle->GetPDGCharge()<<std::endl;
+			  std::cout<<"Track id = "<<track_id<<std::endl;
+			  std::cout<<"Track length = "<<trackLength/cm<<" cm"<<std::endl;
+		  }*/
+	  }
+	  
+	  // particle leaving the TM
+	  if (currentPhysicalName == CriticalVolume && endPoint->GetPhysicalVolume()->GetName() == "pVacGap1"){
+		  
+		  if (particle->GetPDGCharge() != 0){
+			  fRunAct->UpdateChargeCounter(-1*particle->GetPDGCharge());
+			  if (particleName=="pe-" || particleName=="e-" || particleName=="pe+" || particleName=="e+"){
+				  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+				  analysisManager->FillH2(0,log10f(fRunAct->GetBirthE()/eV),log10f(trackLength/m));
+				  analysisManager->FillH2(4,fRunAct->GetBirthPos().x()/mm,fRunAct->GetBirthPos().z()/mm);
+				  //analysisManager->FillH2(4,log10f(kinE/eV),fRunAct->GetBirthDist()/mm);
+				  
+				  if (particleName=="pe-" || particleName=="e-") analysisManager->FillH1(3,log10f(kinE/eV));
+				  //std::cout<<txtyellow<<"(logE, logTL) = "<<log10f(fRunAct->GetBirthE()/eV)<<" , "<<log10f(trackLength/m)<<txtreset<<std::endl;
+			  }
+		  }
+		  /*
+		  //for debugging
+		  if (particle->GetPDGCharge() != 0 && track_id > 1){
+			  if (particleName=="pe-" || particleName=="e-") {
+				  std::cout<<txtblue<<"e- leaving the TM\n"<<txtreset;
+				  std::cout<<"Particle charge = "<<particle->GetPDGCharge()<<std::endl;
+				  std::cout<<"Track id = "<<track_id<<std::endl;
+				  std::cout<<"Track length = "<<trackLength/um<<" um"<<std::endl;
+				  std::cout<<"Kinetic Energy = "<<kinE/eV<<" eV"<<std::endl;
+				  std::cout<<"Next volume: "<<endPoint->GetPhysicalVolume()->GetName()<<std::endl;
+			  }
+			  else if (particleName=="pe+" || particleName=="e+") {
+				  std::cout<<txtyellow<<"e+ leaving the TM\n"<<txtreset;
+				  std::cout<<"Particle charge = "<<particle->GetPDGCharge()<<std::endl;
+				  std::cout<<"Track id = "<<track_id<<std::endl;
+				  std::cout<<"Track length = "<<trackLength/um<<" um"<<std::endl;
+				  std::cout<<"Kinetic Energy = "<<kinE/eV<<" eV"<<std::endl;
+				  std::cout<<"Next volume: "<<endPoint->GetPhysicalVolume()->GetName()<<std::endl;
+			  }
+			  /*else if (particleName=="proton") {
+				  std::cout<<txtred<<"proton leaving the TM\n"<<txtreset;
+				  std::cout<<"Particle charge = "<<particle->GetPDGCharge()<<std::endl;
+				  std::cout<<"Track id = "<<track_id<<std::endl;
+				  std::cout<<"Track length = "<<trackLength/cm<<" cm"<<std::endl;
+				  std::cout<<"Kinetic Energy = "<<kinE/eV<<" eV"<<std::endl;
+				  std::cout<<"Next volume: "<<endPoint->GetPhysicalVolume()->GetName()<<std::endl;
+			  }
+			  else{
+				  std::cout<<txtgreen<<particleName<<" leaving the TM\n"<<txtreset;
+				  std::cout<<"Particle charge = "<<particle->GetPDGCharge()<<std::endl;
+				  std::cout<<"Track id = "<<track_id<<std::endl;
+				  std::cout<<"Track length = "<<trackLength/cm<<" cm"<<std::endl;
+				  std::cout<<"Kinetic Energy = "<<trackLength/eV<<" eV"<<std::endl;
+				  std::cout<<"Next volume: "<<endPoint->GetPhysicalVolume()->GetName()<<std::endl;
+			  }
+		  }*/
+	  }
+  }
+
+  // Apply conditions to kill the track if needed
+  // This must be applied at the end in order to score the last step
+  //  KillTrackCondition(aTrack);
+}
+
+
+//-----------------------------------------------------------------------------
+void SteppingAction::KillTrackCondition(G4Track* aTrack)
+{
+  // Kill tracks when they escape from the disc
+  const G4Step* aStep = aTrack->GetStep();
+  G4int preDepth = aStep->GetPreStepPoint()
+    ->GetTouchableHandle()->GetHistoryDepth();
+  G4int postDepth = aStep->GetPostStepPoint()
+    ->GetTouchableHandle()->GetHistoryDepth();
+  // G4cout << "\tpreDepth = " << preDepth;
+  // G4cout << "\tpostDepth = " << postDepth << G4endl;
+
+  //following lines should be commented?
+    if (postDepth == 0 && preDepth > 0) {
+    // Particle coming back to the enclosure, kill it
+    aTrack->SetTrackStatus(fStopAndKill);
+    }
+}

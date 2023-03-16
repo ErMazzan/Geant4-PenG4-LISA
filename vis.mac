@@ -1,0 +1,26 @@
+#
+# Sample macro file
+#
+/tracking/storeTrajectory 1
+#
+# create scene
+#
+/vis/open OGL
+#####/vis/ogl/set/displayListLimit 5000000
+/vis/scene/create
+/vis/drawVolume
+/vis/scene/add/axes
+/vis/scene/add/trajectories
+/vis/scene/endOfEventAction accumulate
+/vis/viewer/zoom 1
+/vis/viewer/set/style w
+/vis/viewer/set/hiddenEdge 0
+#
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set gamma green
+/vis/modeling/trajectories/drawByParticleID-0/set e- red
+/vis/modeling/trajectories/drawByParticleID-0/set e+ blue
+/vis/modeling/trajectories/drawByParticleID-0/set pgamma yellow
+/vis/modeling/trajectories/drawByParticleID-0/set pe- magenta
+/vis/modeling/trajectories/drawByParticleID-0/set pe+ cyan
+#

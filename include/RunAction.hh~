@@ -1,0 +1,64 @@
+
+#ifndef RunAction_h
+#define RunAction_h 1
+
+#include "G4UserRunAction.hh"
+#include "globals.hh"
+#include "G4ThreeVector.hh"
+
+#include <fstream>
+
+class DetectorConstruction;
+class PenOutputPrinter;
+
+class G4Run;
+
+
+class RunAction : public G4UserRunAction
+{
+private:
+  RunAction();
+
+public:
+  RunAction(const DetectorConstruction*);
+  ~RunAction();
+
+public:
+  // virtual methods from G4UserRunAction
+
+  G4Run* GenerateRun();
+  // A derived G4Run is needed to score quantities during the run
+
+  void BeginOfRunAction(const G4Run*);
+  void EndOfRunAction(const G4Run* );
+
+  // 'Get' methods
+  PenOutputPrinter* GetOutputPrinter() const { return fOutputPrinter; }
+  
+  G4int fDepositedCharge;
+  G4int GetDepositedCharge() const		{ return fDepositedCharge; }
+  void UpdateChargeCounter(G4int count)		{ fDepositedCharge = fDepositedCharge+count; }
+  
+  G4double fBirthE;
+  void SetBirthE(G4double Ene)		{ fBirthE = Ene; }
+  G4double GetBirthE()		{ return fBirthE; }
+  
+    
+  G4double fBirthDist;
+  void SetBirthDist(G4double val)		{ fBirthDist = val; }
+  G4double GetBirthDist()		{ return fBirthDist; }
+
+  G4ThreeVector fBirthPos;
+  void SetBirthPos(G4ThreeVector vec)		{ fBirthPos = vec; }
+  G4double GetBirthPos()		{ return fBirthPos; }
+  
+  void ResetChargeCounter() { fDepositedCharge = 0; }
+
+
+private:
+
+  // Data members
+  PenOutputPrinter* fOutputPrinter;
+
+};
+#endif

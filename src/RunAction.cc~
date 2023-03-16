@@ -1,0 +1,132 @@
+
+#include "RunAction.hh"
+
+#include "G4Run.hh"
+#include "G4RunManager.hh"
+#include "globals.hh"
+#include "g4root.hh"
+
+#include "Run.hh"
+#include "DetectorConstruction.hh"
+#include "PenOutputPrinter.hh"
+
+
+//-------1---------2---------3---------4---------5---------6---------7---------8
+RunAction::RunAction(const DetectorConstruction* detConst)
+{
+  G4cout << "RunAction object created" << G4endl;
+  // Create the printer
+  
+  // Dani: deposited charge in TM
+  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+  analysisManager->CreateH1("hQdep","Deposited Charge in TM per event", 1001, -500.5, 500.5);
+  
+  // Dani: log(Energy) of the created electrons
+  analysisManager->CreateH1("eleKinE","Kinetic energy of new secondary electrons", 40, 1, 9);
+  
+  // Dani: log(Energy) of the created positrons
+  analysisManager->CreateH1("posKinE","Kinetic energy of new secondary positrons", 40, 1, 9);
+  
+  // Dani: log(Energy) of the escaping electrons
+  analysisManager->CreateH1("EscKinE","Kinetic energy of the escaping electrons", 40, 1, 9);
+  
+  // Dani: log(Energy) of the entering electrons
+  analysisManager->CreateH1("EntKinE","Kinetic energy of the entering electrons", 40, 1, 9);
+  
+  // Dani: log(Initial Energy) vs range of the escaping electrons/positrons
+  analysisManager->CreateH2("rangeEsc","Range vs E for escaping e-/e+", 40, 1, 9, 18, -10, -1);
+  
+  // Dani: log(Initial Energy) vs range of the entering electrons/positrons
+  analysisManager->CreateH2("rangeEnt","Range vs E for entering e-/e+", 40, 1, 9, 18, -10, -1);
+  
+  // Dani: log (Initial Energy) vs distance to the center
+  //analysisManager->CreateH2("eleKinEdist","Distance to the center of the generated e-", 40, 1, 9, 100, 0, 100);
+
+  // Dani: x,z coordinates of the generated electrons (e<1 keV)
+  analysisManager->CreateH2("distrLE","x,y coordinates of the generated e-", 51, -45.5, 45.5, 51, -45.5, 45.5);
+
+  // Dani: x,z coordinates of the generated electrons (e>1 keV)
+  analysisManager->CreateH2("distrHE","x,y coordinates of the generated e-", 51, -45.5, 45.5, 51, -45.5, 45.5);
+  
+  // Dani: x,z coordinates  electrons/positrons escaping the TM
+  //analysisManager->CreateH2("EscDist","Distance to the center of the generated e- that escape the TM", 40, 1, 9, 100, 0, 100);
+  analysisManager->CreateH2("EscDistr","x,y coordinates of the generated e-/e+", 51, -45.5, 45.5, 51, -45.5, 45.5);
+  
+  // Dani: x,z coordinates for electrons/positrons entering the TM
+  //analysisManager->CreateH2("EntDist","Distance to the center of the generated e- that enter the TM", 40, 1, 9, 100, 0, 100);
+  analysisManager->CreateH2("EntDistr","x,y coordinates of the entering e-/e+", 51, -45.5, 45.5, 51, -45.5, 45.5);
+  
+  
+  
+  fOutputPrinter = new PenOutputPrinter(detConst);
+}
+
+
+//-------1---------2---------3---------4---------5---------6---------7---------8
+RunAction::RunAction()
+{
+  G4cout << "void RunAction is not meant to be used!" << G4endl;
+}
+
+
+RunAction::~RunAction()
+{
+  // delete the printer
+  if (fOutputPrinter) delete fOutputPrinter;
+  G4cout << "RunAction object destroyed" << G4endl;
+}
+
+
+//-----------------------------------------------------------------------------
+G4Run* RunAction::GenerateRun()
+{
+  // Generate new RUN object, which is specially
+  // dedicated to store run-persistent data.
+  return new Run(fOutputPrinter);
+}
+
+
+//-----------------------------------------------------------------------------
+void RunAction::BeginOfRunAction(const G4Run* /*aRun*/)
+{
+  G4cout << "RunAction::BeginOfRunAction() " << G4endl;
+  
+  fDepositedCharge = 0;
+  fBirthE = 0.;
+  fBirthDist = 0.;
+  //fBirthPos = G4ThreeVector(0.,0.,0.);
+
+  if (IsMaster()) {
+    fOutputPrinter->CreateFiles();
+    fOutputPrinter->BookForMaster();
+  }
+  else {
+    fOutputPrinter->BookForWorker();
+  }
+  
+  // Open an output file
+  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+  G4String fileName = "Output_LISA.root";
+  analysisManager->OpenFile(fileName);
+ 
+
+}
+
+
+//-----------------------------------------------------------------------------
+void RunAction::EndOfRunAction(const G4Run* aRun)
+{
+  G4cout << "RunAction::EndOfRunAction() " << G4endl;
+
+  if (IsMaster()) {
+    const Run* masterRun = static_cast<const Run*>(aRun);
+    fOutputPrinter->DumpAll(masterRun);
+    fOutputPrinter->CloseAllFiles();
+  }
+  
+  // save histograms & ntuple
+  //
+  G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+  analysisManager->Write();
+  analysisManager->CloseFile();
+}
