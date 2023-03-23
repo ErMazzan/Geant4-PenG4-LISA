@@ -94,10 +94,10 @@ RunAction::RunAction(const DetectorConstruction* detConst)
   // analysisManager->CreateH2("ExtCharge","net charge for exiting particles", 100, 10, 1000000, 85, -70, 15, "MeV", "none", "none", "none", "log", "linear");
     
   // 4. Distribution of entering charges of the TM as a function of the initial energy per event
-  analysisManager->CreateH2("EntChargePerEvent","net charge for entering particles", 100, 10, 1000000, 85, -60, 20, "MeV", "none", "none", "none", "log", "linear");
+  analysisManager->CreateH2("EntChargePerEvent","net charge for entering particles", 100, 10, 1000000, 81, -60.5, 20.5, "MeV", "none", "none", "none", "log", "linear");
     
   // 5. Distribution of exiting charges of the TM as a function of the initial energy per event
-  analysisManager->CreateH2("ExtChargePerEvent","net charge for exiting particles", 100, 10, 1000000, 85, -60, 20, "MeV", "none", "none", "none", "log", "linear");
+  analysisManager->CreateH2("ExtChargePerEvent","net charge for exiting particles", 100, 10, 1000000, 81, -60.5, 20.5, "MeV", "none", "none", "none", "log", "linear");
 
   ////////////////////////////////////////////
   // 1D NTuples
