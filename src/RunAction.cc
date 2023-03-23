@@ -148,7 +148,7 @@ G4Run* RunAction::GenerateRun()
 void RunAction::BeginOfRunAction(const G4Run* /*aRun*/)
 {
   G4RunManager::GetRunManager()->SetRandomNumberStore(true);
-  G4cout << "RunAction::BeginOfRunAction() " << G4endl;
+  G4cout << "RunAction::BeginOfRunAction()" << G4endl;
   
   fDepositedCharge = 0;
   fDepositedChargePerRun = 0;
