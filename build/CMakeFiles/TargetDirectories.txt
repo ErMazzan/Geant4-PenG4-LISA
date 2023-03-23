@@ -1,7 +1,0 @@
-/Users/nontxo/Documents/Geant4Projects/srcfiles/LISA-Simulation/PenG4-LISA/build/CMakeFiles/PenG4-aba.dir
-/Users/nontxo/Documents/Geant4Projects/srcfiles/LISA-Simulation/PenG4-LISA/build/CMakeFiles/edit_cache.dir
-/Users/nontxo/Documents/Geant4Projects/srcfiles/LISA-Simulation/PenG4-LISA/build/CMakeFiles/rebuild_cache.dir
-/Users/nontxo/Documents/Geant4Projects/srcfiles/LISA-Simulation/PenG4-LISA/build/CMakeFiles/list_install_components.dir
-/Users/nontxo/Documents/Geant4Projects/srcfiles/LISA-Simulation/PenG4-LISA/build/CMakeFiles/install.dir
-/Users/nontxo/Documents/Geant4Projects/srcfiles/LISA-Simulation/PenG4-LISA/build/CMakeFiles/install/local.dir
-/Users/nontxo/Documents/Geant4Projects/srcfiles/LISA-Simulation/PenG4-LISA/build/CMakeFiles/install/strip.dir

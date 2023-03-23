@@ -93,7 +93,16 @@ void EventAction::EndOfEventAction(const G4Event* evt)
         analysisManager->FillH2(4, KinEnergy, EnteringCharge);
         analysisManager->FillH2(5, KinEnergy, ExitingCharge);
         analysisManager->FillH1(11, ChargePerEvent);
-        analysisManager->FillH1(12, KinEnergy);
+        analysisManager->FillH1(12, KinEnergy, ChargePerEvent);
+        
+        /*
+        if (ChargePerEvent > 0) {
+            for (int i=0; i<ChargePerEvent; i++) { analysisManager->FillH1(12, KinEnergy); }
+        }
+        else {
+            for (int i=0; i<abs(ChargePerEvent); i++) { analysisManager->FillH1(12, KinEnergy); }
+        }
+        */
     }
     
     fRunAction->UpdateChargeCounterPerRun(ChargePerEvent);

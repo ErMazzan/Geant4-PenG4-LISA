@@ -24,8 +24,6 @@
 /control/execute acc_p_solarmax.mac
 /gps/hist/inter Lin
 
-#/gps/ene/mono 400 MeV
-
 /analysis/setActivation true
 /analysis/h1/setActivationToAll true
 

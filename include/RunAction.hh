@@ -51,7 +51,7 @@ public:
     
   G4int fDepositedChargePerRun;
   void UpdateChargeCounterPerRun(G4int count)       { fDepositedChargePerRun = fDepositedChargePerRun+count; }
-    
+     
   /*
   G4int fSquareDepositedCharge;
   void UpdateSquareCharge(G4int scount)       { fSquareDepositedCharge = fSquareDepositedCharge+scount; }
